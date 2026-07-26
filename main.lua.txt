@@ -74,7 +74,7 @@ end)
 
 local function findDroppedGun()
     for _, object in ipairs(Workspace:GetChildren()) do
-        if object:IsA("Tool") or object.Name:lower():find("drop") then
+        if object:IsA("Tool") then
             local name = object.Name:lower()
             if (name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("drop")) and not Players:GetPlayerFromCharacter(object.Parent) then
                 return object:FindFirstChild("Handle") or object
@@ -190,7 +190,7 @@ local function scanGame()
     end
     
     for _, object in ipairs(Workspace:GetChildren()) do
-        if not object:IsA("Tool") and not object.Name:lower():find("drop") then
+        if not object:IsA("Tool") then
             local badHl = object:FindFirstChild("MM2_Gun_Drop_ESP")
             if badHl then badHl:Destroy() end
         end
@@ -198,8 +198,7 @@ local function scanGame()
 
     local gun = findDroppedGun()
     if gun then
-        local targetObject = gun:IsA("Tool") and gun or gun.Parent
-        applyHighlight(targetObject, Color3.fromRGB(0, 238, 255), "MM2_Gun_Drop_ESP")
+        applyHighlight(gun, Color3.fromRGB(0, 238, 255), "MM2_Gun_Drop_ESP")
     end
 end
 
