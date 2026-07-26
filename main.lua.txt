@@ -6,7 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 local espEnabled = true
 local savedPosition = nil
 local instantRoles = {}
-local droppedGunObject = nil
+local gunLocation = nil
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Dolbaeb_Helper_GUI"
@@ -81,45 +81,36 @@ EspButton.MouseButton1Click:Connect(function()
                 if hl then hl:Destroy() end
             end
         end
-        if droppedGunObject then
-            local hl = droppedGunObject:FindFirstChild("MM2_Gun_Drop_ESP")
+        if gunLocation and gunLocation.Parent then
+            local hl = gunLocation.Parent:FindFirstChild("MM2_Gun_Drop_ESP")
             if hl then hl:Destroy() end
         end
     end
 end)
 
-Workspace.DescendantAdded:Connect(function(descendant)
-    if descendant:IsA("Tool") then
-        task.wait(0.1)
-        local name = descendant.Name:lower()
-        if (name:find("gun") or name:find("revolver") or name:find("pistol")) and not Players:GetPlayerFromCharacter(descendant.Parent) then
-            droppedGunObject = descendant
-            applyHighlight(droppedGunObject, Color3.fromRGB(0, 238, 255), "MM2_Gun_Drop_ESP")
+local function findDroppedGunNear(position)
+    if not position then return nil end
+    for _, object in ipairs(Workspace:GetChildren()) do
+        if object.Name:lower():find("gun") or object.Name:lower():find("revolver") or object.Name:lower():find("pistol") or object:IsA("Tool") then
+            if not Players:GetPlayerFromCharacter(object.Parent) then
+                local part = object:FindFirstChild("Handle") or object:FindFirstChildOfClass("Part") or object:FindFirstChildOfClass("MeshPart") or object
+                if part:IsA("BasePart") and (part.Position - position).Magnitude < 15 then
+                    return part
+                end
+            end
         end
     end
-end)
-
-Workspace.DescendantRemoving:Connect(function(descendant)
-    if descendant == droppedGunObject then
-        droppedGunObject = nil
-    end
-    if descendant.Name == "MM2_Player_ESP" or descendant.Name == "MM2_Gun_Drop_ESP" then return end
-    for name, _ in pairs(instantRoles) do
-        if not Players:FindFirstChild(name) then
-            instantRoles[name] = nil
-        end
-    end
-end)
+    return nil
+end
 
 TpButton.MouseButton1Click:Connect(function()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    if droppedGunObject and droppedGunObject.Parent then
-        local targetPart = droppedGunObject:FindFirstChild("Handle") or droppedGunObject:FindFirstChildOfClass("Part") or droppedGunObject:FindFirstChildOfClass("MeshPart") or droppedGunObject
+    if gunLocation and gunLocation.Parent then
         savedPosition = hrp.CFrame
-        hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
+        hrp.CFrame = gunLocation.CFrame + Vector3.new(0, 1, 0)
         task.wait(0.4)
         if savedPosition then
             hrp.CFrame = savedPosition
@@ -182,11 +173,16 @@ end
 local function scanGame()
     if not espEnabled then return end
     
+    local sheriffPos = nil
+    
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            local role = getInstantRole(player)
+            
             if humanoid and humanoid.Health > 0 then
-                local role = getInstantRole(player)
                 if role == "murderer" then
                     applyHighlight(player.Character, Color3.fromRGB(255, 0, 0), "MM2_Player_ESP")
                 elseif role == "sheriff" then
@@ -195,12 +191,36 @@ local function scanGame()
                     applyHighlight(player.Character, Color3.fromRGB(0, 255, 0), "MM2_Player_ESP")
                 end
             else
+                if role == "sheriff" and hrp then
+                    sheriffPos = hrp.Position
+                end
                 local oldHl = player.Character:FindFirstChild("MM2_Player_ESP")
                 if oldHl then oldHl:Destroy() end
             end
         end
     end
+    
+    if sheriffPos and not (gunLocation and gunLocation.Parent) then
+        local foundGun = findDroppedGunNear(sheriffPos)
+        if foundGun then
+            gunLocation = foundGun
+            local targetObject = gunLocation:IsA("Tool") and gunLocation or gunLocation.Parent
+            applyHighlight(targetObject, Color3.fromRGB(0, 238, 255), "MM2_Gun_Drop_ESP")
+        end
+    end
 end
+
+Workspace.DescendantRemoving:Connect(function(descendant)
+    if gunLocation and descendant == gunLocation.Parent then
+        gunLocation = nil
+    end
+    if descendant.Name == "MM2_Player_ESP" or descendant.Name == "MM2_Gun_Drop_ESP" then return end
+    for name, _ in pairs(instantRoles) do
+        if not Players:FindFirstChild(name) then
+            instantRoles[name] = nil
+        end
+    end
+end)
 
 while task.wait(1.5) do
     pcall(scanGame)
