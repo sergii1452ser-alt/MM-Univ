@@ -65,7 +65,7 @@ EspButton.MouseButton1Click:Connect(function()
                 if hl then hl:Destroy() end
             end
         end
-        for _, object in ipairs(Workspace:GetChildren()) do
+        for _, object in ipairs(Workspace:GetDescendants()) do
             local hl = object:FindFirstChild("MM2_Gun_Drop_ESP")
             if hl then hl:Destroy() end
         end
@@ -76,8 +76,9 @@ local function findDroppedGun()
     for _, object in ipairs(Workspace:GetChildren()) do
         if object:IsA("Tool") then
             local name = object.Name:lower()
-            if (name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("drop")) and not Players:GetPlayerFromCharacter(object.Parent) then
-                return object:FindFirstChild("Handle") or object
+            if (name:find("gun") or name:find("revolver") or name:find("pistol")) and not Players:GetPlayerFromCharacter(object.Parent) then
+                -- Возвращаем строго физическую часть Handle, а не всю папку!
+                return object:FindFirstChild("Handle") or object:FindFirstChildOfClass("Part") or object:FindFirstChildOfClass("MeshPart")
             end
         end
     end
@@ -116,7 +117,7 @@ local function applyHighlight(object, color, name)
     end
     hl.FillColor = color
     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-    hl.FillTransparency = 0.4
+    hl.FillTransparency = 0.2 
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 end
@@ -189,8 +190,9 @@ local function scanGame()
         end
     end
     
-    for _, object in ipairs(Workspace:GetChildren()) do
-        if not object:IsA("Tool") then
+   
+    for _, object in ipairs(Workspace:GetDescendants()) do
+        if not object:IsA("Part") and not object:IsA("MeshPart") then
             local badHl = object:FindFirstChild("MM2_Gun_Drop_ESP")
             if badHl then badHl:Destroy() end
         end
