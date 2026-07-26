@@ -147,6 +147,23 @@ local function getInstantRole(player)
         if roleName:find("sheriff") or roleName:find("sher") then return "sheriff" end
     end
 
+    local char = player.Character
+    local backpack = player:FindFirstChild("Backpack")
+    local items = {}
+    if backpack then for _, v in ipairs(backpack:GetChildren()) do table.insert(items, v) end end
+    if char then for _, v in ipairs(char:GetChildren()) do table.insert(items, v) end end
+    
+    for _, item in ipairs(items) do
+        if item:IsA("Tool") then
+            local name = item.Name:lower()
+            if name:find("knife") or name:find("blade") or name:find("slash") then
+                return "murderer"
+            elseif name:find("gun") or name:find("revolver") or name:find("pistol") or name:find("shoot") then
+                return "sheriff"
+            end
+        end
+    end
+
     return "innocent"
 end
 
