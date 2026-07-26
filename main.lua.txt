@@ -66,19 +66,19 @@ EspButton.MouseButton1Click:Connect(function()
             end
         end
         for _, object in ipairs(Workspace:GetDescendants()) do
-            local hl = object:FindFirstChild("MM2_Gun_Drop_ESP")
-            if hl then hl:Destroy() end
+            if object:IsA("Highlight") and object.Name == "MM2_Gun_Drop_ESP" then
+                object:Destroy()
+            end
         end
     end
 end)
 
 local function findDroppedGun()
-    for _, object in ipairs(Workspace:GetChildren()) do
+    for _, object in ipairs(Workspace:GetDescendants()) do
         if object:IsA("Tool") then
             local name = object.Name:lower()
             if (name:find("gun") or name:find("revolver") or name:find("pistol")) and not Players:GetPlayerFromCharacter(object.Parent) then
-                -- Возвращаем строго физическую часть Handle, а не всю папку!
-                return object:FindFirstChild("Handle") or object:FindFirstChildOfClass("Part") or object:FindFirstChildOfClass("MeshPart")
+                return object
             end
         end
     end
@@ -92,8 +92,9 @@ TpButton.MouseButton1Click:Connect(function()
     
     local gun = findDroppedGun()
     if gun then
+        local targetPart = gun:FindFirstChild("Handle") or gun:FindFirstChildOfClass("Part") or gun:FindFirstChildOfClass("MeshPart") or gun
         savedPosition = hrp.CFrame
-        hrp.CFrame = gun.CFrame + Vector3.new(0, 1, 0)
+        hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
         task.wait(0.3)
         if savedPosition then
             hrp.CFrame = savedPosition
@@ -117,7 +118,7 @@ local function applyHighlight(object, color, name)
     end
     hl.FillColor = color
     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-    hl.FillTransparency = 0.2 
+    hl.FillTransparency = 0.4
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 end
@@ -190,17 +191,14 @@ local function scanGame()
         end
     end
     
-   
-    for _, object in ipairs(Workspace:GetDescendants()) do
-        if not object:IsA("Part") and not object:IsA("MeshPart") then
-            local badHl = object:FindFirstChild("MM2_Gun_Drop_ESP")
-            if badHl then badHl:Destroy() end
-        end
-    end
-
     local gun = findDroppedGun()
     if gun then
         applyHighlight(gun, Color3.fromRGB(0, 238, 255), "MM2_Gun_Drop_ESP")
+    else
+        for _, object in ipairs(Workspace:GetChildren()) do
+            local badHl = object:FindFirstChild("MM2_Gun_Drop_ESP")
+            if badHl then badHl:Destroy() end
+        end
     end
 end
 
@@ -213,6 +211,6 @@ Workspace.DescendantRemoving:Connect(function(descendant)
     end
 end)
 
-while task.wait(1) do
+while task.wait(1.5) do
     pcall(scanGame)
 end
